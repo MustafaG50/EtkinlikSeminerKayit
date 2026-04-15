@@ -1,0 +1,91 @@
+﻿<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white"><h5><i class="bi bi-door-open"></i> Salon Ekle</h5></div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" class="row g-2">
+                        <div class="col-7"><input type="text" name="name" class="form-control" placeholder="Salon Adı" required></div>
+                        <div class="col-3"><input type="number" name="capacity" class="form-control" value="20" min="1"></div>
+                        <div class="col-2"><button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button></div>
+                    </form>
+                </div>
+            </div>
+
+            <table class="table table-hover border shadow-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Salon Adı</th>
+                        <th style="width: 120px;">Kapasite</th>
+                        <th style="width: 150px;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <form asp-action="UpdateResource" method="post">
+                                <input type="hidden" name="id" value="@item.Id" />
+                            <td>
+                                <input type="text" name="name" value="@item.Name" class="form-control form-control-sm" required />
+                            </td>
+                            <td>
+                                <input type="number" name="capacity" value="@item.Capacity" class="form-control form-control-sm" min="1" required />
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Güncelle">
+                                        <i class="bi bi-save"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteResource(@item.Id)" title="Sil">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            </form>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white"><h5><i class="bi bi-tags"></i> Etkinlik Türü Ekle</h5></div>
+                <div class="card-body">
+                    <form asp-action="CreateEventType" method="post" class="row g-2">
+                        <div class="col-9"><input type="text" name="typeName" class="form-control" placeholder="Örn: Seminer" required></div>
+                        <div class="col-3"><button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-lg"></i></button></div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="eventTypeContainer">
+                <ul class="list-group shadow-sm">
+                    @foreach (var type in (IEnumerable<EtkinlikSeminerKayit.Domain.Entities.EventType>)ViewBag.EventTypes)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-tag me-2"></i>@type.Name</span>
+                            <form asp-action="DeleteEventType" asp-route-id="@type.Id" method="post" onsubmit="return confirm('@type.Name türünü silmek istediğinize emin misiniz?')">
+                                <button type="submit" class="btn btn-sm text-danger"><i class="bi bi-x-circle-fill"></i></button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="deleteResourceForm" asp-action="DeleteResource" method="post">
+    <input type="hidden" id="deleteResourceId" name="id" />
+</form>
+
+<script>
+    function confirmDeleteResource(id) {
+        if (confirm('Bu salonu silmek istediğinize emin misiniz? (Bağlı rezervasyon varsa silinemez)')) {
+            document.getElementById('deleteResourceId').value = id;
+            document.getElementById('deleteResourceForm').submit();
+        }
+    }
+</script>

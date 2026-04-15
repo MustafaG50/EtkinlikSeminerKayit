@@ -1,0 +1,166 @@
+﻿@model IEnumerable<EtkinlikSeminerKayit.Domain.Entities.Reservation>
+
+<style>
+    /* Akordiyon butonunun içindeki flex yapısının bozulmaması için */
+    .accordion-button::after {
+        margin-left: 0;
+    }
+
+    .custom-header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding-right: 1.5rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="bi bi-grid-3x3"></i> Salon Doluluk Planı</h2>
+
+    @foreach (var dateGroup in Model.GroupBy(r => r.StartTime.Date))
+    {
+        <h4 class="mt-4 mb-3 text-secondary border-bottom pb-2">
+            <i class="bi bi-calendar-event"></i> @dateGroup.Key.ToString("dd MMMM yyyy")
+        </h4>
+
+        <div class="accordion shadow-sm" id="acc-@dateGroup.Key.Day">
+            @foreach (var group in dateGroup.GroupBy(r => new { r.StartTime, r.ResourceId, r.Resource.Name, r.Resource.Capacity }))
+            {
+                var groupId = $"group_{group.Key.StartTime.Ticks}_{group.Key.ResourceId}";
+                var totalCapacity = group.Key.Capacity;
+                var bookedReservations = group.ToList();
+                var bookedCount = bookedReservations.Count(r =>
+                r.EventValues.Any(v => v.EventField.Name.Contains("Koltuk")));
+
+                bool isPast = group.Key.StartTime < DateTime.Now;
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header d-flex align-items-center">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@groupId" style="flex: 1;">
+                            <div class="custom-header-container">
+                                <div>
+                                    <span class="badge @(isPast ? "bg-secondary" : "bg-dark") me-2">@group.Key.StartTime.ToString("HH:mm")</span>
+                                    <strong>@group.Key.Name</strong>
+                                    @if (isPast)
+                                    {
+                                        <small class="text-muted ms-2">(Geçmiş Etkinlik)</small>
+                                    }
+                                </div>
+                                <div>
+                                    <small class="text-muted">Kapasite: @totalCapacity | Dolu: @bookedCount</small>
+                                </div>
+                            </div>
+                        </button>
+
+                        <div class="px-3">
+                            <form asp-controller="Reservation" asp-action="DeleteBySalon" method="post" id="bulk-delete-@groupId">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="resourceId" value="@group.Key.ResourceId" />
+                                <input type="hidden" name="startTime" value="@group.Key.StartTime.ToString("yyyy-MM-ddTHH:mm:ss")" />
+                                <button type="button" onclick="confirmBulkDelete('@groupId', '@group.Key.Name')" class="btn btn-outline-danger btn-sm border-0">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </h2>
+
+                    <div id="@groupId" class="accordion-collapse collapse" data-bs-parent="#acc-@dateGroup.Key.Day">
+                        <div class="accordion-body bg-light">
+                            <div class="row g-2">
+                                @{
+                                    var maxBookedSeat = bookedReservations
+                                    .SelectMany(r => r.EventValues)
+                                    .Where(v => v.EventField.Name.Contains("Koltuk"))
+                                    .Select(v => int.TryParse(v.Value, out int n) ? n : 0)
+                                    .DefaultIfEmpty(0).Max();
+                                    var displayLimit = Math.Max(totalCapacity, maxBookedSeat);
+                                }
+
+                                @for (int i = 1; i <= displayLimit; i++)
+                                {
+                                    var reservation = bookedReservations.FirstOrDefault(r =>
+                                    r.EventValues.Any(v => v.EventField.Name.Contains("Koltuk") && v.Value == i.ToString()));
+
+                                    <div class="col-6 col-md-2">
+                                        @if (reservation != null)
+                                        {
+                                            <div class="card border-danger h-100 shadow-sm text-center p-2">
+                                                <div class="small fw-bold">Koltuk @i</div>
+                                                <i class="bi bi-person-fill text-danger fs-4"></i>
+                                                <form id="delete-form-@reservation.Id" asp-action="Delete" asp-route-id="@reservation.Id" method="post" class="mt-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="button" onclick="confirmDelete(@reservation.Id)" class="btn btn-sm btn-link text-danger p-0 text-decoration-none">Sil</button>
+                                                </form>
+                                            </div>
+                                        }
+                                        else if (i <= totalCapacity)
+                                        {
+                                            <form id="add-form-@group.Key.ResourceId-@i" asp-action="AddSeat" method="post" class="h-100">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="resourceId" value="@group.Key.ResourceId" />
+                                                <input type="hidden" name="eventTypeId" value="@group.First().EventTypeId" />
+                                                <input type="hidden" name="start" value="@group.Key.StartTime.ToString("yyyy-MM-ddTHH:mm:ss")" />
+                                                <input type="hidden" name="end" value="@group.First().EndTime.ToString("yyyy-MM-ddTHH:mm:ss")" />
+                                                <input type="hidden" name="seatNo" value="@i" />
+                                                <button type="button" onclick="confirmAdd('@group.Key.ResourceId-@i', '@i')" class="btn btn-outline-success w-100 h-100 p-2 shadow-sm bg-white">
+                                                    <div class="small">Koltuk @i</div>
+                                                    <i class="bi bi-plus-circle fs-4"></i>
+                                                    <div class="small fw-bold">Ekle</div>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function confirmBulkDelete(groupId, salonName) {
+            Swal.fire({
+                title: 'Tüm Salon Boşaltılsın mı?',
+                text: salonName + " için bu saatteki TÜM kayıtlar silinecek!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Evet, Hepsini Sil',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) document.getElementById('bulk-delete-' + groupId).submit();
+            });
+        }
+
+        function confirmDelete(id) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Bu koltuk rezervasyonu silinecektir.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sil',
+                cancelButtonText: 'Vazgeç'
+            }).then((result) => {
+                if (result.isConfirmed) document.getElementById('delete-form-' + id).submit();
+            });
+        }
+
+        function confirmAdd(id, seat) {
+            Swal.fire({
+                title: 'Koltuk Rezerve Et',
+                text: seat + " numaralı koltuk eklensin mi?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ekle'
+            }).then((result) => {
+                if (result.isConfirmed) document.getElementById('add-form-' + id).submit();
+            });
+        }
+    </script>
+}

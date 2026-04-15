@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = "Yönetim Paneli";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12 text-center mb-4">
+            <h1 class="display-4">Hoş Geldiniz</h1>
+            <p class="lead">Etkinlik ve Seminer Kayıt Sistemi Özet Bilgileri</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white shadow-lg border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase">Toplam Salon</h6>
+                            <h2 class="display-4">@ViewBag.TotalResources</h2>
+                        </div>
+                        <i class="bi bi-building fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-success text-white shadow-lg border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase">Toplam Kayıt</h6>
+                            <h2 class="display-4">@ViewBag.TotalReservations</h2>
+                        </div>
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark shadow-lg border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase">Aktif Etkinlikler</h6>
+                            <h2 class="display-4">@ViewBag.ActiveReservations</h2>
+                        </div>
+                        <i class="bi bi-calendar-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12 text-center">
+            <a href="/Reservation/Create" class="btn btn-lg btn-outline-primary shadow-sm">
+                Hızlı Rezervasyon Oluştur
+            </a>
+        </div>
+    </div>
+</div>
