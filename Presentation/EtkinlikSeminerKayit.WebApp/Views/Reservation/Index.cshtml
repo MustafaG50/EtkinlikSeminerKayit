@@ -1,7 +1,6 @@
 ﻿@model IEnumerable<EtkinlikSeminerKayit.Domain.Entities.Reservation>
 
 <style>
-    /* Akordiyon butonunun içindeki flex yapısının bozulmaması için */
     .accordion-button::after {
         margin-left: 0;
     }
@@ -96,14 +95,17 @@
                                         }
                                         else if (i <= totalCapacity)
                                         {
-                                            <form id="add-form-@group.Key.ResourceId-@i" asp-action="AddSeat" method="post" class="h-100">
+                                            
+                                            <form id="add-form-@groupId-@i" asp-action="AddSeat" method="post" class="h-100">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="resourceId" value="@group.Key.ResourceId" />
                                                 <input type="hidden" name="eventTypeId" value="@group.First().EventTypeId" />
                                                 <input type="hidden" name="start" value="@group.Key.StartTime.ToString("yyyy-MM-ddTHH:mm:ss")" />
                                                 <input type="hidden" name="end" value="@group.First().EndTime.ToString("yyyy-MM-ddTHH:mm:ss")" />
                                                 <input type="hidden" name="seatNo" value="@i" />
-                                                <button type="button" onclick="confirmAdd('@group.Key.ResourceId-@i', '@i')" class="btn btn-outline-success w-100 h-100 p-2 shadow-sm bg-white">
+
+                                                
+                                                <button type="button" onclick="confirmAdd('@groupId-@i', '@i')" class="btn btn-outline-success w-100 h-100 p-2 shadow-sm bg-white">
                                                     <div class="small">Koltuk @i</div>
                                                     <i class="bi bi-plus-circle fs-4"></i>
                                                     <div class="small fw-bold">Ekle</div>

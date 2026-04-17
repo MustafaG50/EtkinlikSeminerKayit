@@ -13,7 +13,7 @@ namespace EtkinlikSeminerKayit.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        // Dependency Injection (Bağımlılıkların Enjekte Edilmesi)
+        // Bağımlılıkları ekledik.
         public ReservationService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
@@ -23,22 +23,23 @@ namespace EtkinlikSeminerKayit.Application.Services
         {
             try
             {
-                // 1. Kaynağı (Oda/Salon) bul ve kapasitesini al
+                // Kaynak Kontrolü yapar.
                 var resource = await _unitOfWork.Repository<Resource>().GetByIdAsync(dto.ResourceId);
                 if (resource == null)
                 {
                     return (false, "Belirtilen salon veya kaynak bulunamadı.");
                 }
-
-                // 2. Çakışma ve Mevcut Doluluk Kontrolü Algoritması
-                // Kural: (Yeni Başlangıç < Mevcut Bitiş) VE (Yeni Bitiş > Mevcut Başlangıç)
+                //Geçmiş tarih kontrolü.
+                if (dto.StartTime < DateTime.Now)
+                {
+                    return (false, "Geçmiş bir tarihe veya saate rezervasyon yapılamaz.");
+                }
+                // Çakışma Kontrolü yapar.
                 var overlappingReservations = await _unitOfWork.Repository<Reservation>()
                     .FindAsync(r => r.ResourceId == dto.ResourceId &&
                     dto.StartTime < r.EndTime &&
                     dto.EndTime > r.StartTime);
-                // --- YENİ MANTIK: Salon bazlı tam çakışma kontrolü ---
-                // Eğer bu bir "Salon Rezervasyonu" ise (Koltuk seçilmeden yapılıyorsa) 
-                // ve içeride zaten başka bir kayıt varsa çakışma ver.
+                // Koltuk seçimi yaparken çakışma kontrolünü es geçer.
                 bool isKoltukSecimiVar = dto.DynamicValues != null && dto.DynamicValues.Any(v => v.Value != null);
 
                 if (!isKoltukSecimiVar && overlappingReservations.Any())
@@ -46,22 +47,19 @@ namespace EtkinlikSeminerKayit.Application.Services
                     return (false, "Bu salon seçilen saatler arasında zaten rezerve edilmiş.");
                 }
 
-                // 3. Dinamik Kapasite Kuralı
-                // Eğer o saatteki kayıt sayısı, salonun güncel kapasitesine eşit veya büyükse reddet
-                // 3. Mevcut Kapasite Kuralı (Kişi bazlı eklemeler için)
+                // Kapasite aşımını engellemek için mevcut rezervasyon sayısını kontrol eder.
                 if (overlappingReservations.Count() >= resource.Capacity)
                 {
                     return (false, $"Kapasite Aşımı! {resource.Name} kontenjanı dolmuştur. (Kapasite: {resource.Capacity})");
                 }
-                // --- YENİ: 3. DİNAMİK ALAN (KOLTUK NO VB.) ÇAKIŞMA KONTROLÜ ---
+                // Koltuk seçimi yapılırken seçilen koltuğun dolu olup olmadığını kontrol eder.
                 if (dto.DynamicValues != null && dto.DynamicValues.Any())
                 {
                     foreach (var dynamicVal in dto.DynamicValues)
                     {
-                        // KURAL: Aynı salon, aynı zaman dilimi ve aynı alanda (FieldId) aynı değer (Value) var mı?
                         var isValueAlreadyTaken = await _unitOfWork.Repository<EventValue>().AnyAsync(ev =>
-                            ev.EventFieldId == dynamicVal.EventFieldId && // Aynı alan (örn: Koltuk No)
-                            ev.Value == dynamicVal.Value &&               // Aynı değer (örn: "15")
+                            ev.EventFieldId == dynamicVal.EventFieldId && // Aynı alan 
+                            ev.Value == dynamicVal.Value &&               // Aynı değer 
                             ev.Reservation.ResourceId == dto.ResourceId && // Aynı salon
                             dto.StartTime < ev.Reservation.EndTime &&     // Çakışan zaman dilimi
                             dto.EndTime > ev.Reservation.StartTime);
@@ -72,19 +70,17 @@ namespace EtkinlikSeminerKayit.Application.Services
                         }
                     }
                 }
-                // -----------------------------------------------------------
-                // 4. Kapasite uygunsa Ana Rezervasyon Kaydını Oluştur
+                // Kapasite uygunsa, çakışma yoksa yeni rezervasyon oluşturur.
                 var newReservation = new Reservation
                 {
                     ResourceId = dto.ResourceId,
                     EventTypeId = dto.EventTypeId,
                     StartTime = dto.StartTime,
                     EndTime = dto.EndTime,
-                    EventValues = new List<EventValue>() // EAV değerlerini eklemek için listeyi başlatıyoruz
+                    EventValues = new List<EventValue>() // Değerleri eklemek için boş liste oluşturuldu.
                 };
 
-                // 5. Dinamik Alanları (EAV) Ana Kayda Bağla
-                // Admin panelinden gönderilen "Koltuk No: 21", "TC: 123" gibi verileri eşleştiriyoruz
+                // Dinamik değerleri EventValue olarak ekler.Reservation nesnesine ekler.
                 if (dto.DynamicValues != null && dto.DynamicValues.Any())
                 {
                     foreach (var dynamicVal in dto.DynamicValues)
@@ -97,11 +93,10 @@ namespace EtkinlikSeminerKayit.Application.Services
                     }
                 }
 
-                // 6. Veritabanına Ekleme İşlemi (Henüz Commit edilmedi)
+                // Rezervasyonu DB ye ekler.
                 await _unitOfWork.Repository<Reservation>().AddAsync(newReservation);
 
-                // 7. UnitOfWork ile İşlemi Tamamla (Transaction)
-                // Eğer EventValues tablosuna kayıt sırasında hata çıkarsa, Reservation da iptal olur.
+                // Unitofwork ile tüm işlemleri kaydet.hata olursa catch bloğuna gider.
                 var result = await _unitOfWork.SaveChangesAsync();
 
                 if (result > 0)
@@ -113,7 +108,7 @@ namespace EtkinlikSeminerKayit.Application.Services
             }
             catch (Exception ex)
             {
-                // Loglama mekanizması eklendiğinde ex.Message loglanabilir
+                // Hata mesajı gönderir.
                 return (false, $"Sistemsel bir hata oluştu: {ex.Message}");
             }
         }

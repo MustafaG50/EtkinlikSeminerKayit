@@ -10,11 +10,13 @@ namespace EtkinlikSeminerKayit.Domain.Entities
 {
     public class EventField : BaseEntity
     {
-        public string Name { get; set; } = string.Empty; // Örn: "Koltuk No"
-        public FieldDataType DataType { get; set; }      // Örn: Number
-        public bool IsRequired { get; set; }
-
-        public int EventTypeId { get; set; }
-        public virtual EventType EventType { get; set; } = null!;
+        public string Name { get; set; } = string.Empty; // Dinamik Bilginin adı(Koltuk no)
+        public FieldDataType DataType { get; set; }      // Ne tür veri girileceğini belirler.(Text, Number, DateTime,Boolean)
+        public bool IsRequired { get; set; } // Alanın boş kalıp kalmayacağını belirler.True ise doldurmadan geçemez
+        public int EventTypeId { get; set; } // Hangi etkinlik türüne ait olduğunu belirtir. Foreign Key olur.
+        public virtual EventType EventType { get; set; } = null!; //Başlangıçta null ama çalışınca dolacak.
+        /* EventType ile ilişkiyi oluşturur . Bir EventFieldin bir etkinlik türüne ait olduğunu belirtir. 
+         Navigation property olarak kullanılır. İki tabloyu ilişkilendirir. virtual anahtar kelimesi tembel
+         yükleme(İhtiyaç olduğunda db den bilgiler gelir) için kullanılır.*/
     }
 }

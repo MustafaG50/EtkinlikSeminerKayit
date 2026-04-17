@@ -9,7 +9,7 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        // HATA 2 ÇÖZÜMÜ: _unitOfWork deðiþkenini burada tanýmlýyoruz
+        
         private readonly IUnitOfWork _unitOfWork;
         public HomeController(ILogger<HomeController> logger, IUnitOfWork unitOfWork)
         {
@@ -19,21 +19,21 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // Veritabanýndan verileri çekiyoruz
+            // DB den verileri çekiyoruz
             var resources = await _unitOfWork.Repository<Resource>().GetAllAsync();
             var reservations = await _unitOfWork.Repository<Reservation>().GetAllAsync();
 
-            // 1. Toplam Salon Sayýsý
+            // Toplam Salon Sayýsý
             ViewBag.TotalResources = resources.Count();
 
-            // 2. Toplam Kayýt (Koltuk bazlý tüm baþvurular)
+            // Toplam Kayýt bütün koltuklarýn toplamý
             ViewBag.TotalReservations = reservations.Count();
 
-            // 3. Aktif Etkinlikler (Sadece benzersiz Salon + Saat seanslarýný sayar)
+            // Aktif etkinlikler bitmemiþ olanlar ve sadece benzersiz salon ve saat seanslarýný sayýyoruz
             ViewBag.ActiveReservations = reservations
-                .Where(r => r.EndTime > DateTime.Now) // Henüz bitmemiþ olanlar
+                .Where(r => r.EndTime > DateTime.Now) // bitmemiþ olanlar
                 .GroupBy(r => new { r.ResourceId, r.StartTime }) // Ayný salon ve saat seanslarýný grupla
-                .Count(); // Gruplarýn sayýsýný al (Yani benzersiz seans sayýsý)
+                .Count(); // Gruplarýn sayýsýný al 
 
             return View();
         }

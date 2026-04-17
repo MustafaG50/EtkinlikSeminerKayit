@@ -20,7 +20,7 @@ namespace EtkinlikSeminerKayit.Persistence.Repository
         public GenericRepository(ApplicationDbContext context)
         {
             _context = context;
-            _dbSet = _context.Set<T>();
+            _dbSet = _context.Set<T>(); //T yerine hangi entity gelirse onun DbSet'ini alırız
         }
 
         public async Task<T?> GetByIdAsync(int id) => await _dbSet.FindAsync(id);
@@ -33,12 +33,12 @@ namespace EtkinlikSeminerKayit.Persistence.Repository
 
             if (filter != null)
             {
-                query = query.Where(filter);
+                query = query.Where(filter);// Filtre yapılan yer
             }
 
             if (include != null)
             {
-                query = include(query); // İşte 'Include' işlemini yapan yer burası
+                query = include(query); // Include işlemi yapılan yer
             }
 
             return await query.ToListAsync();
@@ -49,7 +49,8 @@ namespace EtkinlikSeminerKayit.Persistence.Repository
 
         public async Task AddAsync(T entity) => await _dbSet.AddAsync(entity);
 
-        public void Update(T entity) => _dbSet.Update(entity);
+        public void Update(T entity) => _dbSet.Update(entity); 
+        // async değil çünkü update işlemi entity'nin durumunu değiştirir, db ye kaydetme işlemi SaveChangesAsync() ile yapılır
 
         public void Delete(T entity) => _dbSet.Remove(entity);
 

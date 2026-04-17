@@ -9,7 +9,7 @@ namespace EtkinlikSeminerKayit.Application.Interfaces
 {
     public interface IReservationService
     {
-        // DTO alır, geriye işlemin başarılı/başarısız olma durumunu mesajla birlikte döner
+        // DTO alır, kontrol eder ve giriş izni verir.
         Task<(bool IsSuccess, string Message)> CreateReservationAsync(CreateReservationDto dto);
     }
 }

@@ -19,32 +19,31 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
             _unitOfWork = unitOfWork;
         }
 
-        // 1. Rezervasyon Yapma Ekranı (Form)
+        //Rezervasyon Yapma Ekranı
         public async Task<IActionResult> Create()
         {
-            // Formda seçilmesi için Salonları ve Etkinlik Tiplerini getiriyoruz
-            ViewBag.Resources = await _unitOfWork.Repository<Domain.Entities.Resource>().GetAllAsync();
-            ViewBag.EventTypes = await _unitOfWork.Repository<Domain.Entities.EventType>().GetAllAsync();
+            // Ekranda seçilmesi için Salonları ve Etkinlik Tiplerini getiriyoruz
+            ViewBag.Resources = await _unitOfWork.Repository<Resource>().GetAllAsync();
+            ViewBag.EventTypes = await _unitOfWork.Repository<EventType>().GetAllAsync();
 
             return View();
         }
 
-        // 2. Kaydet Butonuna Basıldığında Çalışan Metot
+        // Kaydet butonuna basılınca çalışır.
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken] // Güvenlik için ekledik.
         public async Task<IActionResult> Create(CreateReservationDto dto)
         {
             var result = await _reservationService.CreateReservationAsync(dto);
 
-            // İşlem ister başarılı ister başarısız olsun, sayfayı tekrar yükleyeceğimiz için 
-            // dropdown listelerini her durumda tekrar doldurmalıyız.
+            // İşlem başarılı olsada olmasada salon ve etkinlik tiplerini dolduruyoruz.
             ViewBag.Resources = await _unitOfWork.Repository<Resource>().GetAllAsync();
             ViewBag.EventTypes = await _unitOfWork.Repository<EventType>().GetAllAsync();
 
             if (result.IsSuccess)
             {
                 TempData["SuccessMessage"] = result.Message;
-                // Başarılı olduğunda formu temizlemek için yeni bir DTO gönderiyoruz
+                // Kutucukları temizlemek için boş dto gönderilir.
                 return View(new CreateReservationDto());
             }
 
@@ -53,20 +52,13 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
             return View(dto);
         }
 
-        // 3. AJAX: Etkinlik Tipi Seçildiğinde Dinamik Alanları Getirir
-        [HttpGet]
+        [HttpGet] // Seçilen türe göre dinamik alanları getirir.
         public async Task<IActionResult> GetFieldsByEventType(int eventTypeId)
         {
-            var fields = await _unitOfWork.Repository<Domain.Entities.EventField>()
+            var fields = await _unitOfWork.Repository<EventField>()
               .FindAsync(f => f.EventTypeId == eventTypeId);
 
             return Json(fields.Select(f => new { f.Id, f.Name, f.DataType }));
-        }
-        private async Task LoadViewBagData()
-        {
-            // Veritabanından Salonları ve Etkinlik Tiplerini tekrar çekiyoruz
-            ViewBag.Resources = await _unitOfWork.Repository<Domain.Entities.Resource>().GetAllAsync();
-            ViewBag.EventTypes = await _unitOfWork.Repository<Domain.Entities.EventType>().GetAllAsync();
         }
         public async Task<IActionResult> Index()
         {
@@ -125,22 +117,24 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
+        // Bu fonksiyon salona koltuk eklemek için kullanılır.
+        // Dinamik olarak 'Koltuk No' alanını bulur ve o koltuğun o saatte dolu olup olmadığını kontrol eder.
         [HttpPost]
         [ValidateAntiForgeryToken] // Güvenlik için ekledik
         public async Task<IActionResult> AddSeat(int resourceId, int eventTypeId, DateTime start, DateTime end, string seatNo)
         {
-            if (start < DateTime.Now)
+            if (start < DateTime.Now.AddMinutes(-5))
             {
-                TempData["ErrorMessage"] = "Geçmiş tarihteki bir seansa ekleme yapılamaz.";
+                TempData["ErrorMessage"] = $"TARİH HATASI! Seçilen: {start:dd.MM.yyyy HH:mm:ss} | Sunucu Saati: {DateTime.Now:dd.MM.yyyy HH:mm:ss}";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Dinamik olarak 'Koltuk No' alanının ID'sini bulalım (ID 1 olmayabilir)
-            var seatFields = await _unitOfWork.Repository<EventField>()
-                .FindAsync(f => f.Name.Contains("Koltuk") && f.EventTypeId == eventTypeId);
+            var allFieldsForThisType = await _unitOfWork.Repository<EventField>()
+                .FindAsync(f => f.EventTypeId == eventTypeId);
 
-            var seatField = seatFields.FirstOrDefault();
+            var seatField = allFieldsForThisType.FirstOrDefault(f => f.Name.Contains("Koltuk"))
+                ?? allFieldsForThisType.FirstOrDefault()
+                ?? (await _unitOfWork.Repository<EventField>().FindAsync(f => f.Name.Contains("Koltuk"))).FirstOrDefault();
 
             if (seatField == null)
             {
@@ -148,7 +142,7 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Aynı koltuk o saatte dolmuş mu kontrolü
+            // Aynı koltuk dolumu kontrolü
             var isBusy = await _unitOfWork.Repository<Reservation>().AnyAsync(r =>
                 r.ResourceId == resourceId &&
                 r.StartTime == start &&
@@ -169,46 +163,56 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
                 EventValues = new List<EventValue>
                 {
                     new EventValue {
-                    EventFieldId = seatField.Id, // Elle 1 yazmak yerine dinamik ID kullandık
+                    EventFieldId = seatField.Id,
                     Value = seatNo
                     }
                 }
             };
 
             await _unitOfWork.Repository<Reservation>().AddAsync(newReservation);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(); // DB ekleme işlemi.
 
             TempData["SuccessMessage"] = $"Koltuk {seatNo} başarıyla eklendi.";
             return RedirectToAction(nameof(Index));
         }
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken] // Salona ait tüm kayıtları silen fonksiyon
         public async Task<IActionResult> DeleteBySalon(int resourceId, DateTime startTime)
         {
-            // 1. O salon ve o saatteki tüm kayıtları buluyoruz
+            // Bağlı verileri silmek için include ile birlikte rezervasyonları çekiyoruz
             var reservationsToDelete = await _unitOfWork.Repository<Reservation>()
-                .FindAsync(r => r.ResourceId == resourceId && r.StartTime == startTime);
+                .GetAllAsync(
+                    filter: r => r.ResourceId == resourceId && r.StartTime == startTime,
+                    include: q => q.Include(r => r.EventValues)
+                );
 
             if (reservationsToDelete != null && reservationsToDelete.Any())
             {
                 try
                 {
-                    // 2. Her bir rezervasyonu (ve bağlı EventValues'larını) siliyoruz
                     foreach (var res in reservationsToDelete)
                     {
+                     
+                        if (res.EventValues != null)
+                        {
+                            foreach (var val in res.EventValues.ToList())
+                            {
+                                _unitOfWork.Repository<EventValue>().Delete(val);
+                            }
+                        }
+
                         _unitOfWork.Repository<Reservation>().Delete(res);
                     }
-
                     await _unitOfWork.SaveChangesAsync();
                     TempData["SuccessMessage"] = "Salonun bu saatteki tüm rezervasyonları temizlendi.";
                 }
                 catch (Exception ex)
                 {
-                    TempData["ErrorMessage"] = "Silme işlemi sırasında bir hata oluştu: " + ex.Message;
+                    TempData["ErrorMessage"] = "Silme işlemi sırasında bir hata oluştu: " +
+                        (ex.InnerException?.Message ?? ex.Message);
                 }
             }
-
-            return RedirectToAction("Index", "Home"); // Ana sayfaya yönlendir
+            return RedirectToAction(nameof(Index));
         }
     }
 }

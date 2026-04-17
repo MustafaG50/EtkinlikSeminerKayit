@@ -9,11 +9,11 @@ namespace EtkinlikSeminerKayit.Domain.Entities
 {
     public class Resource : BaseEntity
     {
-        public string Name { get; set; } = string.Empty;
-        public int Capacity { get; set; } // Örn: 20
-        public string? Description { get; set; }
+        public string Name { get; set; } = string.Empty; //Salon Adı
+        public int Capacity { get; set; } // Salon kapasitesi
+        public string? Description { get; set; } // Salon hakkında ek bilgiler (isteğe bağlı)
 
-        // Navigation Property: Bu odadaki rezervasyonlar
+        // Navigasyon özellikleri
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
     }
 }

@@ -7,9 +7,13 @@ using System.Threading.Tasks;
 
 namespace EtkinlikSeminerKayit.Application.Interfaces
 {
+    //DB ye yarım veri yazmamızı engeller.Bütünlük Sağlar.
+    //Bir tabloda hata olurs diğerlerinide yazmaz.
+    //IDisposable db bağlantısını kapatmak için kullanılır.
     public interface IUnitOfWork :IDisposable
     {
         IGenericRepository<T> Repository<T>() where T : BaseEntity;
-        Task<int> SaveChangesAsync();
+        //Her bir tablo için ayrı repository yazmak generic repositoryden tüm tabloları yönetebiliriz.
+        Task<int> SaveChangesAsync(); // Repositorylerde yapılan işlemleri DB ye kaydetmek için kullanılır.
     }
 }

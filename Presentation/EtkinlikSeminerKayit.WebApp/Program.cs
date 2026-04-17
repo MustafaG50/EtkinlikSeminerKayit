@@ -12,13 +12,13 @@ namespace EtkinlikSeminerKayit.WebApp
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // 1. Veritabaný Baðlantýsý
+            // Veritabaný Baðlantýsý
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-            // 2. Repository ve UnitOfWork Kayýtlarý
+            // UnitOfWork Kayýtlarý
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // 3. Servis Kayýtlarý (Application Katmanýndan)
+            // Servis Kayýtlarý 
             builder.Services.AddScoped<IReservationService, ReservationService>();
 
             builder.Services.AddControllersWithViews();

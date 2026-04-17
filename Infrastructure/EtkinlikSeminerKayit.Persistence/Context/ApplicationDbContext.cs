@@ -10,34 +10,37 @@ namespace EtkinlikSeminerKayit.Persistence.Context
 {
     public class ApplicationDbContext : DbContext
     {
+        //bizim kullanacağımız ayarları alır ve DbContext e iletir.
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-        public DbSet<Resource> Resources { get; set; }
+        public DbSet<Resource> Resources { get; set; } // Tablolar 
         public DbSet<EventType> EventTypes { get; set; }
         public DbSet<EventField> EventFields { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<EventValue> EventValues { get; set; }
 
+        //DB oluşturulurken EF Core verdiğimiz talimatlar.
+        //Bir kere db bağlantısı yaparken çalışır.
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // EAV Performans İyileştirmesi: EventValues tablosunda hızlı arama için index
+            // İndeksleme yaparak EventValue tablosunda ReservationId üzerinden hızlı sorgulama sağlanır
             modelBuilder.Entity<EventValue>()
                 .HasIndex(v => v.ReservationId);
 
-            // Çakışma kontrollerinde ResourceId ve Tarih aralıkları sık sorgulanacak
+            // Çakışma kontrolü için sık sorgulanacak alanlara indeke ekledik.
             modelBuilder.Entity<Reservation>()
                 .HasIndex(r => new { r.ResourceId, r.StartTime, r.EndTime });
 
-            base.OnModelCreating(modelBuilder);
+            base.OnModelCreating(modelBuilder);//önce standart ayarlar uygulanır sonra benimkiler.
 
-            // EventValue silinirken Reservation silinmesin, sadece bağ kopsun (NoAction)
+            // EventValue silinirken rezervasyonun silinmesini engeller.
             modelBuilder.Entity<EventValue>()
                 .HasOne(ev => ev.Reservation)
                 .WithMany(r => r.EventValues)
                 .HasForeignKey(ev => ev.ReservationId)
-                .OnDelete(DeleteBehavior.NoAction); // Kritik satır burası
+                .OnDelete(DeleteBehavior.NoAction); // Kritik satır
 
-            // Eğer aynı hata EventField için de gelirse bunu da ekleyebilirsin:
+            // EventValue silinirken EventField'ın silinmesini engeller.
             modelBuilder.Entity<EventValue>()
                 .HasOne(ev => ev.EventField)
                 .WithMany()

@@ -18,12 +18,12 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
         {
             var resources = await _unitOfWork.Repository<Resource>().GetAllAsync();
 
-            // Türleri çek (ViewBag ile gönderiyoruz)
+            // Türleri çek
             ViewBag.EventTypes = await _unitOfWork.Repository<EventType>().GetAllAsync();
             return View(resources);
         }
 
-        // Kapasite Güncelleme (Hızlı Düzenleme)
+        // Kapasite Güncelleme
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateResource(int id, string name, int capacity)
@@ -70,7 +70,7 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
             {
                 Name = name,
                 Capacity = capacity,
-                CreatedDate = DateTime.Now // Eğer base entity kullanıyorsan
+                CreatedDate = DateTime.Now
             };
 
             await _unitOfWork.Repository<Resource>().AddAsync(newResource);
@@ -79,7 +79,7 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
             TempData["SuccessMessage"] = $"{name} başarıyla eklendi.";
             return RedirectToAction(nameof(Index));
         }
-        // --- SALON SİLME ---
+        // Salon Silme
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteResource(int id)
@@ -102,7 +102,7 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // --- ETKİNLİK TÜRÜ EKLEME ---
+        // Etkinlik türü ekleme işlemi
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateEventType(string typeName)
@@ -117,18 +117,17 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
             return RedirectToAction(nameof(Index)); // Aynı sayfaya dön
         }
 
-        // --- ETKİNLİK TÜRÜ SİLME ---
+        // Etkinlik türü silme işlemi
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteEventType(int id)
         {
-            // 1. Silinmek istenen türü bul
+            //Silinmek istenen türü bul
             var eventType = await _unitOfWork.Repository<EventType>().GetByIdAsync(id);
 
             if (eventType != null)
             {
-                // 2. Bu etkinlik tipine bağlı herhangi bir rezervasyon var mı kontrol et
-                // (Bu tipte kayıt varsa silme işlemini engelle)
+                // tipe bağlı rezervasyon var mı kontrol eder
                 var hasLinkedReservations = await _unitOfWork.Repository<Reservation>()
                     .AnyAsync(r => r.EventTypeId == id);
 
@@ -140,7 +139,7 @@ namespace EtkinlikSeminerKayit.WebApp.Controllers
 
                 try
                 {
-                    // 3. Eğer bağlı kayıt yoksa sil
+                    // Bağlı kayıt yoksa siler.
                     _unitOfWork.Repository<EventType>().Delete(eventType);
                     await _unitOfWork.SaveChangesAsync();
                     TempData["SuccessMessage"] = "Etkinlik türü başarıyla silindi.";

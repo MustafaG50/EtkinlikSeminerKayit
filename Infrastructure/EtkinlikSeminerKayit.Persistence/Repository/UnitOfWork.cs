@@ -17,14 +17,15 @@ namespace EtkinlikSeminerKayit.Persistence.Repository
         {
             _context = context;
         }
-
+        // İhtiyacımız olan repositoryi oluşturup dönderir.
         public IGenericRepository<T> Repository<T>() where T : BaseEntity
         {
             return new GenericRepository<T>(_context);
         }
-
+        //Bu kod çalışana kadar db ye bilgiler kaydedilmez.
+        //eğer hata çıkarsa hiçbir bilgi kaydedilmez.
         public async Task<int> SaveChangesAsync() => await _context.SaveChangesAsync();
-
+        //DB bağlantısını kapatır ve belleği temizler.
         public void Dispose() => _context.Dispose();
     }
 }
