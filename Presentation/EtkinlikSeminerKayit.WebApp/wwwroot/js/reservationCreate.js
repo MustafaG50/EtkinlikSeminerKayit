@@ -14,20 +14,16 @@
             container.empty();
 
             if (fields && fields.length > 0) {
-                // SAYAÇ EKLEDİK: i parametresi yerine kendi sayacımızı kullanmalıyız 
-                // çünkü bazı alanları atladığımızda index bozulmamalı.
                 var visibleIndex = 0;
 
                 $.each(fields, function (i, field) {
                     var fieldName = field.name || field.Name;
                     var fieldId = field.id || field.Id;
 
-                    // --- DEĞİŞİKLİK BURADA ---
-                    // Eğer alan adı "Koltuk" içeriyorsa bu döngü adımını atla (ekrana basma)
                     if (fieldName.toLowerCase().includes("koltuk")) {
-                        return true; // jQuery each içinde 'continue' demektir.
+                        return true; 
                     }
-                    // -------------------------
+                    
 
                     var html = `
                         <div class="col-md-6 mb-3">
@@ -37,7 +33,7 @@
                         </div>`;
 
                     container.append(html);
-                    visibleIndex++; // Sadece ekrana basılan alanlar için indexi artır
+                    visibleIndex++;
                 });
 
                 console.log("Kutular HTML'e eklendi.");

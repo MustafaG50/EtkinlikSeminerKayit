@@ -38,7 +38,7 @@ namespace EtkinlikSeminerKayit.Persistence.Context
                 .HasOne(ev => ev.Reservation)
                 .WithMany(r => r.EventValues)
                 .HasForeignKey(ev => ev.ReservationId)
-                .OnDelete(DeleteBehavior.NoAction); // Kritik satır
+                .OnDelete(DeleteBehavior.NoAction);
 
             // EventValue silinirken EventField'ın silinmesini engeller.
             modelBuilder.Entity<EventValue>()
