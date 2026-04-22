@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36811.4 d17.14
+VisualStudioVersion = 17.14.36811.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -18,6 +18,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentation", "Presentation", "{D91EA3CF-BB5E-4B37-AAA2-264E0A84DE49}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EtkinlikSeminerKayit.WebApp", "Presentation\EtkinlikSeminerKayit.WebApp\EtkinlikSeminerKayit.WebApp.csproj", "{E6CE623E-A285-4B63-A152-639EC27F99CE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Work", "Work", "{7315CBC4-9116-4024-9C56-FA1095CD687E}"
+	ProjectSection(SolutionItems) = preProject
+		Notlarım.txt = Notlarım.txt
+		VeriTabanıScript.txt = VeriTabanıScript.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
